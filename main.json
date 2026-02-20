@@ -1,6 +1,6 @@
 {
     "scence1" : {
-        "map":"map/map01.json",
+        "map":"maps/map01.json",
         "tile":"tile/tiles",
         "character_pos":{
             "player":[640,640]
