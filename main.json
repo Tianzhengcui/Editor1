@@ -1,0 +1,16 @@
+{
+    "scence1" : {
+        "map":"map/map01.json",
+        "tile":"tile/tiles",
+        "character_pos":{
+            "player":[640,640]
+        },
+        "port_pos":{
+            "portal1": {
+                "pos":[40,40]
+                ,"toward" : "none"
+            }
+
+        }
+    }
+}

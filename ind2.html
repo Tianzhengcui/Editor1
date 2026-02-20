@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta id="vp" name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <title>Mobile Landscape UI + JSON List Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="portraitMask" class="portraitMask" aria-hidden="true">
+    <div class="portraitCard">
+      <div class="portraitTitle">请横屏使用</div>
+      <div class="portraitText">把手机旋转到横屏即可继续。</div>
+      <button id="btnTryLockLandscape" class="primary">尝试锁定横屏</button>
+      <div class="portraitHint">（不同浏览器支持不一样）</div>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="left">
+      <button id="btnDrawer" class="iconBtn" title="侧边栏">☰</button>
+      <div class="title">JSON List Viewer</div>
+    </div>
+    <div class="right">
+      <span id="status" class="badge">Ready</span>
+      <button id="btnLock" class="iconBtn lockOff" title="锁定触控">🔓</button>
+    </div>
+  </header>
+
+  <aside id="drawer" class="drawer">
+    <div class="drawerHead">
+      <div class="drawerTitle">快捷栏（占位按钮）</div>
+      <button id="btnCloseDrawer" class="iconBtn" title="关闭">✕</button>
+    </div>
+    <div class="drawerBtns">
+      <button class="ghost">按钮 A</button>
+      <button class="ghost">按钮 B</button>
+      <button class="ghost">按钮 C</button>
+      <button class="ghost">按钮 D</button>
+      <button class="ghost">按钮 E</button>
+      <button class="ghost">按钮 F</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="card">
+      <div class="cardRow">
+        <div class="cardTitle">加载 JSON</div>
+        <input id="file" type="file" accept="application/json,.json" />
+      </div>
+
+      <div class="cardRow">
+        <label class="label">
+          或输入 URL
+          <input id="url" type="text" placeholder="例如：main.json" value="main.json" />
+        </label>
+        <button id="btnLoadUrl" class="primary">加载</button>
+      </div>
+
+      <div class="cardRow">
+        <label class="label">
+          选择一个 list（数组字段）
+          <select id="listPick"></select>
+        </label>
+        <button id="btnShow" class="primary">列出来</button>
+      </div>
+
+      <div class="cardRow">
+        <label class="label">
+          最多显示条数
+          <input id="limit" type="number" min="1" value="200" />
+        </label>
+        <button id="btnClear" class="ghost">清空</button>
+      </div>
+    </section>
+    <canvas id="c" width="640" height="480"></canvas>
+ 
+    <section class="card">
+      <div class="cardRow">
+        <div class="cardTitle">List 输出</div>
+        <div class="muted" id="info">（还没加载 JSON）</div>
+      </div>
+      <div class="listWrap">
+        <ul id="out" class="outList"></ul>
+      </div>
+    </section>
+    <section class="card">
+      <div class="cardRow">
+        <div class="cardTitle">Log</div>
+      </div>
+      <pre id="log" class="log"></pre>
+    </section>
+  </main>
+
+  <script type = "module", src="controller.js"></script>
+</body>
+</html>

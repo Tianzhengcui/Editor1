@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Blocks</title>
+<canvas id="c" style="width:100vw;height:100vh;display:block;background:#111;touch-action:none"></canvas>
+<script>
+function $(id){return document.getElementById(id)}
+var c=$("c"),x0=0,y0=0,last=null,blocks=[],S=16,ctx=c.getContext("2d");
+function fit(){var d=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+addEventListener("resize",fit);
+function pos(e){var r=c.getBoundingClientRect(),t=e.touches&&e.touches[0];return {x:(t?t.clientX:e.clientX)-r.left,y:(t?t.clientY:e.clientY)-r.top}}
+function draw(){
+  var r=c.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height);
+  ctx.fillStyle="#000"; for(var i=0;i<blocks.length;i++){var b=blocks[i];ctx.fillRect(b.x,b.y,S,S)}
+  ctx.fillStyle="#eee"; ctx.font="12px monospace";
+  ctx.fillText("mouse: "+(x0|0)+","+(y0|0),10,18);
+  ctx.fillText("last : "+(last? (last.x|0)+","+(last.y|0) : "-"),10,34);
+  ctx.fillText("tap/click to place | keys: P=png J=json C=clear",10,50);
+}
+function place(x,y){var bx=(x-S/2+0.5)|0,by=(y-S/2+0.5)|0; last={x:bx,y:by}; blocks.push({x:bx,y:by}); draw()}
+c.onmousemove=function(e){var p=pos(e);x0=p.x;y0=p.y;draw()}
+c.onclick=function(e){var p=pos(e);place(p.x,p.y)}
+c.ontouchstart=function(e){e.preventDefault();var p=pos(e);x0=p.x;y0=p.y;place(p.x,p.y)};
+
+function dl(name,blob){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},500)}
+function savePNG(){c.toBlob(function(b){if(b)dl("blocks.png",b)},"image/png")}
+function saveJSON(){
+  var r=c.getBoundingClientRect();
+  var text=JSON.stringify({w:r.width,h:r.height,size:S,blocks:blocks},null,2);
+  dl("blocks.json",new Blob([text],{type:"application/json;charset=utf-8"}));
+}
+onkeydown=function(e){
+  var k=(e.key||"").toLowerCase();
+  if(k==="p")savePNG();
+  else if(k==="j")saveJSON();
+  else if(k==="c"){blocks.length=0;last=null;draw();}
+};
+fit();
+</script>

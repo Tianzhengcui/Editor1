@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Canvas Block Placer</title>
+  <style>
+    html,body{height:100%;margin:0;background:#111;color:#eee;font:14px system-ui}
+    .bar{
+      position:fixed;left:0;right:0;top:0;
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+      padding:10px;background:#1a1a1a;border-bottom:1px solid #333;
+      z-index:10;
+    }
+    .bar b{font-weight:700}
+    button,input{
+      background:#222;color:#eee;border:1px solid #444;border-radius:10px;
+      padding:8px 10px;
+    }
+    input{width:90px}
+    #c{
+      position:fixed;left:0;right:0;top:58px;bottom:0;
+      width:100vw;height:calc(100vh - 58px);
+      display:block;background:#afffff;
+      touch-action:none; /* 允许我们自己处理触摸 */
+    }
+    .muted{color:#aaa}
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <b>方块放置</b>
+    <span class="muted">鼠标/触摸点击画布放黑色方块</span>
+    <span>|</span>
+    <span>Mouse: <span id="mxy">0,0</span></span>
+    <span>|</span>
+    <span>Last block: <span id="bxy">-</span></span>
+    <span>|</span>
+    <label>Size <input id="size" type="number" min="1" value="16"></label>
+    <button id="png">下载PNG</button>
+    <button id="json">下载JSON</button>
+    <button id="clear">清空</button>
+  </div>
+
+  <canvas id="c"></canvas>
+
+  <script>
+    // ===== DOM =====
+    function $(id){ return document.getElementById(id); }
+    var canvas = $("c");
+    var ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    var mxy = $("mxy");
+    var bxy = $("bxy");
+    var sizeEl = $("size");
+
+    // ===== Data =====
+    var blocks = []; // {x,y,size}
+
+    // ===== Resize canvas to device pixels =====
+    function resizeCanvas(){
+      var dpr = window.devicePixelRatio || 1;
+      var r = canvas.getBoundingClientRect();
+      canvas.width  = Math.max(1, Math.floor(r.width * dpr));
+      canvas.height = Math.max(1, Math.floor(r.height * dpr));
+      ctx.setTransform(dpr,0,0,dpr,0,0); // 以后用 CSS 像素绘制更直观
+      redraw();
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    // ===== Helpers =====
+    function getPos(evt){
+      var r = canvas.getBoundingClientRect();
+      var x, y;
+      if(evt.touches && evt.touches.length){
+        x = evt.touches[0].clientX - r.left;
+        y = evt.touches[0].clientY - r.top;
+      }else{
+        x = evt.clientX - r.left;
+        y = evt.clientY - r.top;
+      }
+      return {x:x, y:y};
+    }
+
+    function redraw(){
+      // 清屏
+      var r = canvas.getBoundingClientRect();
+      ctx.clearRect(0,0,r.width,r.height);
+
+      // 画所有方块
+      ctx.fillStyle = "#000";
+      for(var i=0;i<blocks.length;i++){
+        var b = blocks[i];
+        ctx.fillRect(b.x, b.y, b.size, b.size);
+      }
+    }
+
+    function placeBlock(x, y){
+      var s = parseInt(sizeEl.value, 10) || 16;
+
+      // 让方块中心对齐点击点（可改成左上角对齐）
+      var bx = Math.round(x - s);
+      var by = Math.round(y - s);
+
+      blocks.push({ x: bx, y: by, size: s });
+      bxy.textContent = bx + "," + by;
+      redraw();
+    }
+
+    // ===== Events (mouse + touch) =====
+    canvas.addEventListener("mousemove", function(evt){
+      var p = getPos(evt);
+      mxy.textContent = Math.round(p.x) + "," + Math.round(p.y);
+    });
+
+    canvas.addEventListener("click", function(evt){
+      var p = getPos(evt);
+      placeBlock(p.x, p.y);
+    });
+
+    // 触摸：tap 放置
+    canvas.addEventListener("touchstart", function(evt){
+      evt.preventDefault();
+      var p = getPos(evt);
+      mxy.textContent = Math.round(p.x) + "," + Math.round(p.y);
+      placeBlock(p.x, p.y);
+    }, {passive:false});
+
+    // ===== Download helpers =====
+    function downloadBlob(filename, blob){
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 500);
+    }
+
+    $("png").addEventListener("click", function(){
+      // 用原始 canvas 像素导出 PNG
+      canvas.toBlob(function(blob){
+        if(!blob) return;
+        downloadBlob("blocks.png", blob);
+      }, "image/png");
+    });
+
+    $("json").addEventListener("click", function(){
+      var payload = {
+        canvas_css_px: {
+          width: canvas.getBoundingClientRect().width,
+          height: canvas.getBoundingClientRect().height
+        },
+        blocks: blocks.slice()
+      };
+      var text = JSON.stringify(payload, null, 2);
+      downloadBlob("blocks.json", new Blob([text], {type:"application/json;charset=utf-8"}));
+    });
+
+    $("clear").addEventListener("click", function(){
+      blocks.length = 0;
+      bxy.textContent = "-";
+      redraw();
+    });
+
+    // boot
+    resizeCanvas();
+  </script>
+</body>
+</html>
