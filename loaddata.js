@@ -98,7 +98,7 @@ export function draw() {
       } else {
         // 临时方块占位，避免“白屏”
         ctx.fillStyle = "#ccc";
-        ctx.fillRect(x * TILE - camera.x, y * TILE - camera.y, TILE, TILE);
+        ctx.fillRect(x * TILE - camera.x, y * TILE - camera.y, TILE *scale, TILE*scale);
       }
     }
   }
