@@ -93,7 +93,7 @@ export function draw() {
         ctx.drawImage(
           titles,
           t * TILE, 0, TILE, TILE,
-          x * TILE - camera.x, y * TILE - camera.y, TILE * scale, TILE *scale
+          (x * TILE  - camera.x)*scale, scale*(y * TILE - camera.y), TILE * scale, TILE *scale
         );
       } else {
         // 临时方块占位，避免“白屏”
