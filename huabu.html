@@ -1,38 +1,353 @@
-<!doctype html><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Blocks</title>
-<canvas id="c" style="width:100vw;height:100vh;display:block;background:#111;touch-action:none"></canvas>
-<script>
-function $(id){return document.getElementById(id)}
-var c=$("c"),x0=0,y0=0,last=null,blocks=[],S=16,ctx=c.getContext("2d");
-function fit(){var d=devicePixelRatio||1,r=c.getBoundingClientRect();c.width=r.width*d;c.height=r.height*d;ctx.setTransform(d,0,0,d,0,0);draw()}
-addEventListener("resize",fit);
-function pos(e){var r=c.getBoundingClientRect(),t=e.touches&&e.touches[0];return {x:(t?t.clientX:e.clientX)-r.left,y:(t?t.clientY:e.clientY)-r.top}}
-function draw(){
-  var r=c.getBoundingClientRect(); ctx.clearRect(0,0,r.width,r.height);
-  ctx.fillStyle="#000"; for(var i=0;i<blocks.length;i++){var b=blocks[i];ctx.fillRect(b.x,b.y,S,S)}
-  ctx.fillStyle="#eee"; ctx.font="12px monospace";
-  ctx.fillText("mouse: "+(x0|0)+","+(y0|0),10,18);
-  ctx.fillText("last : "+(last? (last.x|0)+","+(last.y|0) : "-"),10,34);
-  ctx.fillText("tap/click to place | keys: P=png J=json C=clear",10,50);
-}
-function place(x,y){var bx=(x-S/2+0.5)|0,by=(y-S/2+0.5)|0; last={x:bx,y:by}; blocks.push({x:bx,y:by}); draw()}
-c.onmousemove=function(e){var p=pos(e);x0=p.x;y0=p.y;draw()}
-c.onclick=function(e){var p=pos(e);place(p.x,p.y)}
-c.ontouchstart=function(e){e.preventDefault();var p=pos(e);x0=p.x;y0=p.y;place(p.x,p.y)};
 
-function dl(name,blob){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},500)}
-function savePNG(){c.toBlob(function(b){if(b)dl("blocks.png",b)},"image/png")}
-function saveJSON(){
-  var r=c.getBoundingClientRect();
-  var text=JSON.stringify({w:r.width,h:r.height,size:S,blocks:blocks},null,2);
-  dl("blocks.json",new Blob([text],{type:"application/json;charset=utf-8"}));
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>One-Scale UI Stage (Fit Contain)</title>
+  <style>
+    :root{
+      --bg:#000;
+      --panel:#1b1b1b;
+      --panel2:#141414;
+      --line:#333;
+      --text:#eee;
+      --muted:#bdbdbd;
+      --btn:#101010;
+      --accent:#7dd3fc;
+    }
+    html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font:14px system-ui;}
+    *{box-sizing:border-box}
+    button, input, textarea{font:inherit}
+    button{
+      border:1px solid var(--line);
+      background:var(--btn);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    button:active{transform:translateY(1px)}
+    .badge{
+      padding:3px 8px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:#0f0f0f;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .badge b{color:var(--accent)}
+    .sep{height:1px;background:var(--line);margin:10px 0}
+
+    /* ======= 屏幕容器：负责黑边与居中 ======= */
+    #screen{
+      position:fixed;
+      inset:0;
+      background:#000; /* 黑边底色 */
+      overflow:hidden;
+    }
+
+    /* ======= 舞台：所有UI都放里面，统一缩放 ======= */
+    #stage{
+      position:absolute;
+      left:0; top:0;
+      width:890px;   /* DESIGN_W */
+      height:370px;   /* DESIGN_H */
+      transform-origin: 0 0;
+      background:#0b0b0b;
+      border:1px solid #222; /* 便于看舞台边界 */
+    }
+
+    /* ======= 舞台内布局：左面板 + 右预览（你想要全适配就放在这里） ======= */
+    #app{
+      width:100%;
+      height:50%;
+      display:grid;
+      grid-template-columns: 320px 1fr;
+    }
+
+    /* 左侧面板 */
+    #sidebar{
+      background:var(--panel2);
+      border-right:1px solid var(--line);
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+    #sideHeader{
+      flex:0 0 auto;
+      padding:10px;
+      background:var(--panel);
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    #sideBody{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+      padding:10px;
+    }
+    textarea{
+      width:100%;
+      min-height:140px;
+      resize:vertical;
+      background:#0f0f0f;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      color:var(--muted);
+    }
+
+    /* 右侧：顶部信息 + 游戏区 + 底部栏（全都在舞台里，所以一起缩放） */
+    #main{
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+    #topbar{
+      flex:0 0 auto;
+      padding:8px;
+      background:var(--panel);
+      border-bottom:1px solid var(--line);
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      user-select:none;
+    }
+    #gameWrap{
+      flex:1 1 auto;
+      min-height:0;
+      position:relative;
+      background:#111;
+      overflow:hidden;
+    }
+    #view{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%, -50%);
+      image-rendering: pixelated;
+    }
+    #hud{
+      position:absolute;
+      left:12px; right:12px; bottom:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      z-index:20;
+      pointer-events:none;
+    }
+    #hud .cluster{display:flex;gap:12px;pointer-events:auto}
+    #hud .pill{
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.55);
+      color:var(--text);
+    }
+
+    #bottombar{
+      flex:0 0 auto;
+      padding:10px;
+      background:var(--panel);
+      border-top:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      user-select:none;
+    }
+    #bottombar .left,#bottombar .right{display:flex;gap:10px;align-items:center}
+    #bottombar .center{color:var(--muted)}
+  </style>
+</head>
+<body>
+<div id="screen">
+  <div id="stage">
+    <div id="app">
+      <!-- 左面板 -->
+      <div id="sidebar">
+        <div id="sideHeader">
+          <div><b>Editor</b></div>
+          <button id="btnExport">导出</button>
+        </div>
+        <div id="sideBody">
+          <div class="badge"><b>设计尺寸</b>: 890×371（整套UI一起缩放）</div>
+          <div class="sep"></div>
+          <div style="color:var(--muted);margin-bottom:6px">左侧随舞台缩放，永远显示完整</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button>瓦片</button><button>碰撞</button><button>对象</button><button>脚本</button>
+          </div>
+          <div class="sep"></div>
+          <div style="color:var(--muted);margin-bottom:6px">JSON / 日志</div>
+          <textarea id="box" spellcheck="false">{ "hello": "world" }</textarea>
+        </div>
+      </div>
+
+      <!-- 右侧主区 -->
+      <div id="main">
+        <div id="topbar">
+          <button id="btnSave">保存</button>
+          <button id="btnLoad">读档</button>
+          <span class="badge" id="infoA"><b>screen</b>:</span>
+          <span class="badge" id="infoB"><b>dpr</b>:</span>
+          <span class="badge" id="infoC"><b>scale</b>:</span>
+          <span class="badge" id="infoD"><b>world</b>:</span>
+        </div>
+
+        <div id="gameWrap">
+          <canvas id="view"></canvas>
+          <div id="hud">
+            <div class="cluster">
+              <div class="pill">摇杆</div>
+            </div>
+            <div class="cluster">
+              <div class="pill">A</div>
+              <div class="pill">B</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="bottombar">
+          <div class="left">
+            <button>背包</button><button>地图</button>
+          </div>
+          <div class="center">底栏也一起缩放，手机上保证能看到全部</div>
+          <div class="right">
+            <button>设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 设计尺寸：你要“所有UI一起适配”的根 ===== */
+const DESIGN_W = 890;
+const DESIGN_H = 370;
+
+const screenEl = document.getElementById("screen");
+const stageEl  = document.getElementById("stage");
+
+const infoA = document.getElementById("infoA");
+const infoB = document.getElementById("infoB");
+const infoC = document.getElementById("infoC");
+const infoD = document.getElementById("infoD");
+
+/* ===== 全局缩放：fit-contain（保证舞台完整显示） ===== */
+let stageFit = { scale: 1, offsetX: 0, offsetY: 0 };
+
+function layoutStage(){
+  const SW = window.innerWidth;
+  const SH = window.innerHeight;
+
+  const scale = Math.min(SW / DESIGN_W, SH / DESIGN_H);
+  const drawW = DESIGN_W * scale;
+  const drawH = DESIGN_H * scale;
+
+  const offsetX = Math.floor((SW - drawW) / 2);
+  const offsetY = Math.floor((SH - drawH) / 2);
+
+  stageEl.style.width = DESIGN_W + "px";
+  stageEl.style.height = DESIGN_H + "px";
+  stageEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+
+  stageFit = { scale, offsetX, offsetY };
+
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  infoA.innerHTML = `<b>screen</b>: ${SW}×${SH}`;
+  infoB.innerHTML = `<b>dpr</b>: ${dpr.toFixed(2)}`;
+  infoC.innerHTML = `<b>scale</b>: ${scale.toFixed(4)}x`;
 }
-onkeydown=function(e){
-  var k=(e.key||"").toLowerCase();
-  if(k==="p")savePNG();
-  else if(k==="j")saveJSON();
-  else if(k==="c"){blocks.length=0;last=null;draw();}
+
+window.addEventListener("resize", layoutStage);
+layoutStage();
+
+/* ===== 画布示例（画布在舞台内，所以一起缩放，不需要再单独做letterbox） ===== */
+const canvas = document.getElementById("view");
+const ctx = canvas.getContext("2d");
+
+// 让 canvas 使用舞台内 gameWrap 的 CSS 尺寸作为绘制尺寸（这里简单用 clientWidth/Height）
+const gameWrap = document.getElementById("gameWrap");
+
+function resizeCanvas(){
+  const wrapW = gameWrap.clientWidth;
+  const wrapH = gameWrap.clientHeight;
+
+  const scale = Math.min(wrapW / BASE_W, wrapH / BASE_H);
+
+  const drawW = Math.floor(BASE_W * scale);
+  const drawH = Math.floor(BASE_H * scale);
+
+  canvas.style.width = drawW + "px";
+  canvas.style.height = drawH + "px";
+
+  // 逻辑分辨率固定
+  canvas.width = BASE_W;
+  canvas.height = BASE_H;
+}
+resizeCanvas();
+
+let t = 0;
+function draw(){
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // 假装游戏画面
+  ctx.fillStyle = "#222";
+  ctx.fillRect(20,20,canvas.width-40,canvas.height-40);
+
+  ctx.strokeStyle = "#333";
+  for(let x=20;x<canvas.width-20;x+=40){
+    ctx.beginPath(); ctx.moveTo(x,20); ctx.lineTo(x,canvas.height-20); ctx.stroke();
+  }
+  for(let y=20;y<canvas.height-20;y+=40){
+    ctx.beginPath(); ctx.moveTo(20,y); ctx.lineTo(canvas.width-20,y); ctx.stroke();
+  }
+
+  const px = (Math.sin(t)*0.45+0.5)*(canvas.width-80)+40;
+  const py = (Math.cos(t*0.8)*0.45+0.5)*(canvas.height-80)+40;
+  ctx.fillStyle = "#4af";
+  ctx.fillRect(px-20, py-20, 40, 40);
+
+  ctx.fillStyle = "#ddd";
+  ctx.font = "18px system-ui";
+  ctx.fillText("Stage scaled UI (everything fits)", 30, 50);
+
+  t += 0.02;
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ===== 关键：输入坐标要把“舞台缩放”反算回去 ===== */
+function toStageCoords(clientX, clientY){
+  // clientX/Y 是屏幕坐标
+  const sx = (clientX - stageFit.offsetX) / stageFit.scale;
+  const sy = (clientY - stageFit.offsetY) / stageFit.scale;
+  const inside = (sx>=0 && sy>=0 && sx<DESIGN_W && sy<DESIGN_H);
+  return { x:sx, y:sy, inside };
+}
+
+screenEl.addEventListener("pointerdown", (e)=>{
+  const p = toStageCoords(e.clientX, e.clientY);
+  infoD.innerHTML = p.inside ? `<b>world</b>: stage ${p.x.toFixed(1)}, ${p.y.toFixed(1)}` : `<b>world</b>: (black bar)`;
+});
+
+/* ===== 存档示例：不登录也能保存（本地） ===== */
+document.getElementById("btnSave").onclick = () => {
+  const data = { note:"demo", time:Date.now() };
+  localStorage.setItem("save1", JSON.stringify(data));
+  alert("已保存到本地（无需登录）");
 };
-fit();
+document.getElementById("btnLoad").onclick = () => {
+  alert(localStorage.getItem("save1") || "没有存档");
+};
 </script>
+</body>
+</html>>
