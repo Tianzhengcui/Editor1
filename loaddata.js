@@ -66,9 +66,9 @@ export function closeEnemy(ctx) {
 export function draw() {
   // ✅ 如果地图还没加载出来，先画个字，别“白屏无反馈”
   if (!ground || ground.length === 0) {
-    ctx.clearRect(0, 0, 640, 480);
+    ctx.clearRect(0, 0, 640*scale, 480*scale);
     ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, 640, 480);
+    ctx.fillRect(0, 0, 640*scale, 480*scale);
     ctx.fillStyle = "#fff";
     ctx.font = "16px monospace";
     ctx.fillText("Loading map / ground is empty...", 20, 30);
