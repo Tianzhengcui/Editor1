@@ -1,5 +1,5 @@
 // world_render.js (示例名)
-import { ctx } from "./controller.js";
+import { ctx , scale} from "./controller.js";
 import { loadMap2D } from "./loadmap.js";
 // ✅ 把这些按你项目真实来源改成 import
 //import { player, keys, canInteract } from "./world.js"; 
@@ -75,11 +75,11 @@ export function draw() {
     return;
   }
 
-  ctx.clearRect(0, 0, 640, 480);
+  ctx.clearRect(0, 0, 640*scale, 480*scale);
 
   // 背景
   ctx.fillStyle = "white";
-  ctx.fillRect(0, 0, 640, 480);
+  ctx.fillRect(0, 0, 640*scale, 480*scale);
 
   // ✅ tiles 没加载完就别 drawImage（不然你以为画了，其实没画）
   const tilesReady = titles.complete && titles.naturalWidth > 0;
@@ -93,7 +93,7 @@ export function draw() {
         ctx.drawImage(
           titles,
           t * TILE, 0, TILE, TILE,
-          x * TILE - camera.x, y * TILE - camera.y, TILE, TILE
+          x * TILE - camera.x, y * TILE - camera.y, TILE * scale, TILE *scale
         );
       } else {
         // 临时方块占位，避免“白屏”

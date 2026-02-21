@@ -4,11 +4,11 @@ import { draw , initWorld3} from "./loaddata.js";
 export function $(id){ return document.getElementById(id); }
 
 var state = { json:null, locked:false };
-SW = window.innerWidth
-SH = window.innerHeight
+let SW = window.innerWidth;
+let SH = window.innerHeight;
 const DESIGN_W = 891;
 const DESIGN_H = 370;
-scale = min(SW / DESIGN_W, SH / DESIGN_H)
+export var scale = Math.min(SW / DESIGN_W, SH / DESIGN_H)
 $("stage").style.width = SW * scale;
 $("stage").style.height = SH * scale;
 function log(msg){
