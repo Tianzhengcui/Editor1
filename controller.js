@@ -24,8 +24,8 @@ function isArray(v){
 // ===== 横屏提示（保持你原来的行为）=====
 function checkOrientation(){
   var mask = $("portraitMask");
-  if(window.innerHeight > window.innerWidth) mask.classList.add("show");
-  else mask.classList.remove("show");
+  //if(window.innerHeight > window.innerWidth) mask.classList.add("show");
+  //else mask.classList.remove("show");
 }
 window.addEventListener("resize", checkOrientation);
 window.addEventListener("orientationchange", checkOrientation);
