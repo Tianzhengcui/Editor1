@@ -11,6 +11,9 @@ const DESIGN_H = 370;
 export var scale = Math.min(SW / DESIGN_W, SH / DESIGN_H)
 $("stage").style.width = SW * scale;
 $("stage").style.height = SH * scale;
+$("canvas").style.width = 640 * scale;
+
+$("canvas").style.width = 480 * scale;
 function log(msg){
   var t = new Date().toLocaleTimeString();
   $("log").textContent = "["+msg+"] "+"\n"+$("log").textContent;
