@@ -22,9 +22,11 @@ padding:0 10px;background:#0c0f16;border-bottom:1px solid var(--line);z-index:20
 .main{position:fixed;top:52px;left:0;right:0;bottom:0;padding:10px;
 display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:hidden}
 @media (max-width:900px){.main{grid-template-columns:1fr}}
-canvas{
-  display: block;
-  margin: 0 auto;
+#c{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
 }
 
 .card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:10px;overflow:hidden;width: 300px;}
