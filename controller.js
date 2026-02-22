@@ -11,8 +11,8 @@ const DESIGN_H = 370;
 export var scale = Math.min(SW / DESIGN_W, SH / DESIGN_H)
 $("stage").style.width = SW * scale;
 $("stage").style.height = SH * scale;
-$("c").style.width = String(SW * 1/2) + "px";
-$("c").style.height = String(SH*1/2) + "px";
+$("c").style.width = String(SW * 1/3) + "px";
+$("c").style.height = String(SH*1/3) + "px";
 console.log($("c").style.height)
 function log(msg){
   var t = new Date().toLocaleTimeString();
